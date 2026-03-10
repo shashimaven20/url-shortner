@@ -1,9 +1,9 @@
 package com.shortner.url.controller;
 
+import com.shortner.url.DTO.ShortenUrlResponse;
 import com.shortner.url.entity.UrlMapping;
 import com.shortner.url.service.UrlService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,12 +18,12 @@ public class UrlController {
 
     @PostMapping("/shorten")
     @ResponseBody
-    public ResponseEntity<?> shortenUrl(@RequestBody Map<String,String> body) {
+    public ShortenUrlResponse shortenUrl(@RequestBody Map<String,String> body) {
         String originalUrl = body.get("originalUrl");
 
         UrlMapping result = urlService.checkOriginalUrlExists(originalUrl);
 
-        return ResponseEntity.ok(Map.of("shortUrl", result.getShortCode()));
+        return new ShortenUrlResponse(result.getShortCode());
     }
 
     @GetMapping("/{shortCode}")
