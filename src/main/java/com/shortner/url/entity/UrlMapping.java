@@ -1,9 +1,8 @@
 package com.shortner.url.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 public class UrlMapping {
@@ -14,6 +13,43 @@ public class UrlMapping {
 
     private String shortCode;
     private String originalUrl;
+    private Long clickCount = 0L;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastAccessed;
+
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        this.lastAccessed = LocalDateTime.now();
+    }
+
+    public Long getClickCount() {
+        return clickCount;
+    }
+
+    public void setClickCount(Long clickCount) {
+        this.clickCount = clickCount;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getLastAccessed() {
+        return lastAccessed;
+    }
+
+    public void setLastAccessed(LocalDateTime lastAccessed) {
+        this.lastAccessed = lastAccessed;
+    }
 
     public Long getId() {
         return id;

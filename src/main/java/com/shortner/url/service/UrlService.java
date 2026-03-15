@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -18,6 +19,9 @@ public class UrlService {
 
     @Autowired
     RedisTemplate<String,String> redisTemplate;
+
+    @Autowired
+    private ClickEventProducer clickEventProducer;
 
     private static final String BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final Duration CACHE_TTL = Duration.ofHours(2);
@@ -41,8 +45,7 @@ public class UrlService {
         if(existing.isPresent()) {
             UrlMapping url = existing.get();
 
-            redisTemplate.opsForValue()
-                    .set(url.getShortCode(), url.getOriginalUrl(), CACHE_TTL);
+            redisTemplate.opsForValue().set(url.getShortCode(), url.getOriginalUrl(), CACHE_TTL);
 
             return url;
         }
@@ -50,16 +53,33 @@ public class UrlService {
     }
 
     public String getOriginalUrl(String shortCode) {
+
+        // increment counters in Redis
+        redisTemplate.opsForHash().increment("url_clicks", shortCode, 1);
+        redisTemplate.opsForZSet().incrementScore("popular_urls", shortCode, 1);
+
+        // always send click event to Kafka
+        clickEventProducer.sendClickEvent(shortCode);
+
+        // check cache
         String cached = redisTemplate.opsForValue().get(shortCode);
+        if (cached != null) {
+            return cached;
+        }
 
-        if(cached!=null) return cached;
+        // fallback to DB if not cached
+        UrlMapping url = urlRepository.findByShortCode(shortCode).orElseThrow(() -> new RuntimeException("Not found"));
+        url.setClickCount(url.getClickCount() + 1);
+        urlRepository.save(url);
 
-        UrlMapping url = urlRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new RuntimeException("Not found"));
-
+        // re‑cache the value
         redisTemplate.opsForValue().set(shortCode, url.getOriginalUrl(), CACHE_TTL);
 
         return url.getOriginalUrl();
+    }
+
+    public Set<String> getTopUrls() {
+        return redisTemplate.opsForZSet().reverseRange("popular_urls",0,4); //top 5
     }
 
     private String generateShortCode() {

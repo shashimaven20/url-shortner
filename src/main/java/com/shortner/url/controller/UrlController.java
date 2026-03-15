@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Set;
 
 @Controller
 @RequestMapping("/api")
@@ -32,5 +33,11 @@ public class UrlController {
         String originalUrl = urlService.getOriginalUrl(shortCode);
 
         return "redirect:" + originalUrl;
+    }
+
+    @GetMapping("/top5")
+    @ResponseBody
+    public Set<String> getTopUrls() {
+        return urlService.getTopUrls();
     }
 }
