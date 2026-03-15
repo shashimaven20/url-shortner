@@ -5,6 +5,7 @@ import com.shortner.url.repo.UrlRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +17,22 @@ public class ClickEventConsumer {
     @Autowired
     private UrlRepository urlRepository;
 
+    private final StringRedisTemplate redisTemplate;
+
+    public ClickEventConsumer(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
     @KafkaListener(topics = "url-clicks")
     public void consume(UrlClickEvent event) {
+        String shortCode = event.getShortCode();
+
         System.out.println("Event consumed: "+ event);
         log.info("event: {}", event);
-        urlRepository.incrementClick(event.getShortCode());
+        //urlRepository.incrementClick(event.getShortCode());
+
+        redisTemplate.opsForHash().increment("url_clicks", shortCode, 1);
+        redisTemplate.opsForHash().put("url_last_accessed", shortCode, String.valueOf(event.getTimestamp()));
+        redisTemplate.opsForZSet().incrementScore("popular_urls", shortCode, 1);
     }
 }
