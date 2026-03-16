@@ -54,14 +54,8 @@ public class UrlService {
 
     public String getOriginalUrl(String shortCode) {
 
-        // increment counters in Redis
-        redisTemplate.opsForHash().increment("url_clicks", shortCode, 1);
-        redisTemplate.opsForZSet().incrementScore("popular_urls", shortCode, 1);
-
-        // always send click event to Kafka
         clickEventProducer.sendClickEvent(shortCode);
 
-        // check cache
         String cached = redisTemplate.opsForValue().get(shortCode);
         if (cached != null) {
             return cached;
@@ -69,8 +63,6 @@ public class UrlService {
 
         // fallback to DB if not cached
         UrlMapping url = urlRepository.findByShortCode(shortCode).orElseThrow(() -> new RuntimeException("Not found"));
-        url.setClickCount(url.getClickCount() + 1);
-        urlRepository.save(url);
 
         // re‑cache the value
         redisTemplate.opsForValue().set(shortCode, url.getOriginalUrl(), CACHE_TTL);
