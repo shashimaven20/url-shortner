@@ -26,7 +26,7 @@ public class ClickBatchUpdater {
         this.urlRepository = urlRepository;
     }
 
-    @Scheduled(fixedRate = 15000)
+    @Scheduled(fixedRate = 1500000)
     public void flushClicks() {
 
         log.info("Inside batch updater.");

@@ -35,7 +35,7 @@ public class UrlService {
         String shortCode = encodeBase62(saved.getId());
         saved.setShortCode(shortCode);
 
-        redisTemplate.opsForValue().set(shortCode, originalUrl, CACHE_TTL);
+        //redisTemplate.opsForValue().set(shortCode, originalUrl, CACHE_TTL);
 
         return urlRepository.save(saved);
     }

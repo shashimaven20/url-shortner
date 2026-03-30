@@ -2,6 +2,7 @@ package com.shortner.url.service;
 
 import com.shortner.url.DTO.UrlClickEvent;
 import com.shortner.url.repo.UrlRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,8 @@ public class ClickEventConsumer {
     private UrlRepository urlRepository;
 
     private final StringRedisTemplate redisTemplate;
+    @Autowired
+    MeterRegistry meterRegistry;
 
     public ClickEventConsumer(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -25,6 +28,8 @@ public class ClickEventConsumer {
 
     @KafkaListener(topics = "url-clicks")
     public void consume(UrlClickEvent event) {
+        meterRegistry.counter("url_clicks_total",
+                "shortCode", event.getShortCode()).increment();
         String shortCode = event.getShortCode();
 
         System.out.println("Event consumed: "+ event);
